@@ -1,7 +1,7 @@
 # Artifact Notes
 
-This repository is meant to be pushed to GitHub as source code. Large generated
-artifacts should be kept outside git.
+This repository is intended to contain source code and lightweight
+configuration files. Large generated artifacts should be stored outside git.
 
 ## Ignored Outputs
 
@@ -15,25 +15,10 @@ The `.gitignore` excludes:
 - evaluation JSONL files
 - plots and summary CSV/JSON files
 
-If you want to publish finished experiment outputs, use GitHub Releases,
-Hugging Face Datasets, Zenodo, or an external storage bucket.
+## Run Outputs
 
-## Original Local Artifact Packages
-
-The local workspace used to create this repo contained:
-
-```text
-GoRSA_workspace_scripts_and_human_artifacts_20260514.zip
-GoRSA_BigCodeBench_20260514_artifacts.zip
-gorsa_mbpp_oversample50_h200_flow_20260515.tar.gz
-```
-
-Those archives are not copied into this repository. Their reusable source code
-has been extracted into `src/`, `scripts/`, `benchmarks/`, and `examples/`.
-
-## Suggested Release Layout
-
-For an external artifact release, include:
+For each benchmark run, the primary output directory is `$GORSA_ROOT_DIR`.
+Typical contents are:
 
 ```text
 run_config.json
@@ -44,4 +29,23 @@ tasks/*.json
 logs/*.log
 ```
 
-Do not include model checkpoints, Hugging Face caches, or virtual environments.
+The per-task JSON files contain candidate programs, candidate-induced
+instructions, L0 score matrices, and final reranking decisions. See
+[task_record_schema.md](task_record_schema.md) for field-level details.
+
+## External Artifact Release
+
+For reviewer-facing artifact bundles, include only reproducibility-relevant
+outputs:
+
+```text
+run_config.json
+summary_pairwise_avg.json
+baseline_pairwise_avg.csv
+pairwise_avg_curve.csv
+tasks/*.json
+logs/*.log
+```
+
+Do not include model checkpoints, Hugging Face caches, local virtual
+environments, or private credentials.
