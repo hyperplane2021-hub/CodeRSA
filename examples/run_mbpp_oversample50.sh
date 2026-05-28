@@ -26,7 +26,6 @@ mkdir -p "${GORSA_ROOT_DIR}/logs"
 echo "root: ${GORSA_ROOT_DIR}"
 echo "seed: ${GORSA_SEED}"
 echo "limit: ${GORSA_LIMIT}"
-echo "candidate oversample: ${GORSA_CANDIDATE_OVERSAMPLE}"
 echo "candidate samples per task: ${GORSA_CANDIDATE_OVERSAMPLE}"
 
 for stage in \
