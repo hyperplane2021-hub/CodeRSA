@@ -33,8 +33,7 @@ export BIGCODEBENCH_REPO
 export BCB_SEED="$seed"
 export GORSA_SEED="$seed"
 export GORSA_LIMIT="${GORSA_LIMIT:-1140}"
-export GORSA_DATASET=bigcodebench
-model_id="${BCB_MODEL_ID:-meta-llama/Meta-Llama-3-8B-Instruct}"
+model_id="${BCB_MODEL_ID:-${GORSA_MODEL_ID:-meta-llama/Meta-Llama-3-8B-Instruct}}"
 model_revision="${BCB_MODEL_REVISION:-main}"
 model_file_slug="${model_id//\//--}--${model_revision}"
 run_slug="${BCB_RUN_SLUG:-llama3_8b}"
@@ -114,12 +113,11 @@ run_stage 04_score_baselines_vllm \
     --prompt-batch-size 8 \
     --max-model-len "$VLLM_MAX_MODEL_LEN"
 
-run_stage 05_generate_instructions_vllm_one_sentence \
-  env GORSA_ADDITIONAL_INSTRUCTION_PROMPT_STYLE=one_sentence_actual \
-    python scripts/05_generate_instructions_vllm.py \
-      --gpu-memory-utilization "$VLLM_GPU_MEMORY_UTILIZATION" \
-      --task-batch-size 24 \
-      --max-model-len "$VLLM_MAX_MODEL_LEN"
+run_stage 05_generate_instructions_vllm \
+  python scripts/05_generate_instructions_vllm.py \
+    --gpu-memory-utilization "$VLLM_GPU_MEMORY_UTILIZATION" \
+    --task-batch-size 24 \
+    --max-model-len "$VLLM_MAX_MODEL_LEN"
 
 run_stage 06_compute_l0_vllm_bs32 \
   python scripts/06_compute_l0_vllm.py \

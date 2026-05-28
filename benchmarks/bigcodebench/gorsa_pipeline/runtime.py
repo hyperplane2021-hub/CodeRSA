@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from .core import load_humanevalplus_test_split, seed_everything
+from .core import seed_everything
 from .settings import load_config, save_run_config
 
 
@@ -42,21 +42,20 @@ def get_hf_token(prompt: bool = True) -> str | None:
 
 def load_dataset_for_config(config=None):
     config = config or load_config()
-    dataset_name = os.environ.get("GORSA_DATASET", "").strip().lower()
-    if dataset_name in {"bigcodebench", "tasks", "task_files"}:
-        task_dir = Path(config.root_dir) / "tasks"
-        records = []
-        for path in sorted(task_dir.glob("*.json")):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                records.append({"task_id": str(data["task_id"])})
-            except Exception:
-                continue
-        if config.limit is not None:
-            records = records[: config.limit]
-        return records
-    return load_humanevalplus_test_split(limit=config.limit)
+    task_dir = Path(config.root_dir) / "tasks"
+    records = []
+    for path in sorted(task_dir.glob("*.json")):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            records.append({"task_id": str(data["task_id"])})
+        except Exception:
+            continue
+    if not records:
+        raise RuntimeError(f"No BigCodeBench task files found under {task_dir}")
+    if config.limit is not None:
+        records = records[: config.limit]
+    return records
 
 
 def load_model_and_tokenizer(config=None, prompt_for_token: bool = True):

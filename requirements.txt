@@ -1,7 +1,6 @@
 accelerate
 datasets
 huggingface_hub>=0.24
-matplotlib
 numpy
 pandas
 sentencepiece

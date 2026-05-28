@@ -3,42 +3,47 @@
 This anonymous repository provides the reproduction code for **CodeRSA**, a
 pragmatic reranking method for natural-language-to-code generation.
 
-CodeRSA samples multiple candidate programs, derives candidate-induced
-instructions from those programs, scores candidates in the induced local
-instruction neighborhood, and reranks them using local pairwise pragmatic
-contests together with a global support term.
+CodeRSA samples a pool of candidate programs, derives candidate-induced
+instructions, computes local pairwise pragmatic contests, and combines those
+pairwise scores with global L0 support to select the final program.
 
 ## Benchmarks
 
 The repository supports the three benchmarks used in the paper:
 
 ```text
-HumanEval+
-MBPP+
-BigCodeBench
+HumanEval+      164 tasks
+MBPP+           378 tasks
+BigCodeBench    1140 tasks
 ```
 
-Each benchmark follows the same high-level pipeline:
+All three benchmarks follow the same high-level pipeline:
 
 1. initialize benchmark tasks
-2. generate candidate programs
+2. generate 10 candidate programs per task
 3. evaluate candidates with benchmark tests
 4. compute Coder and CoderReviewer scores
 5. generate candidate-induced instructions
 6. compute the L0 instruction-candidate score matrix
-7. run CodeRSA pairwise + global-support reranking
-8. write reports and summary tables
+7. run CodeRSA reranking
+8. write the summary table
 
-## Repository Layout
+## Paper Settings
 
-```text
-src/                         shared pipeline implementation
-scripts/                     benchmark stage scripts and utilities
-benchmarks/humaneval_plus/   HumanEval+ reproduction scripts
-benchmarks/bigcodebench/     BigCodeBench reproduction scripts and adapters
-examples/                    end-to-end launcher scripts
-docs/                        method and artifact documentation
-```
+The default settings match the paper:
+
+- candidate pool size: `n=10`
+- candidate sampling: temperature `1.2`, top-p `1.0`
+- reported seed sweep: `42, 43, 44, 45, 46`
+- induced-instruction generation: greedy decoding
+- final CodeRSA score: `z(pairwise) + z(avg-all L0)`
+
+HumanEval+ and MBPP+ use the concise one-sentence behavior-description prompt
+for induced instructions. BigCodeBench uses the detailed behavior-description
+prompt.
+
+To reproduce a different paper model, change `GORSA_MODEL_ID`; the benchmark
+and reranking settings stay fixed.
 
 ## Installation
 
@@ -75,20 +80,13 @@ export GORSA_LIMIT=378
 bash scripts/run_full_vllm_mbpp.sh
 ```
 
-For the two-GPU oversample-50 configuration:
-
-```bash
-export WORKSPACE=/workspace
-export HF_TOKEN=...
-bash examples/run_mbpp_oversample50_h200.sh
-```
-
 ## Running HumanEval+
 
 ```bash
 cd benchmarks/humaneval_plus
 export WORKSPACE=/workspace
 export HF_TOKEN=...
+export GORSA_MODEL_ID=meta-llama/Meta-Llama-3-8B-Instruct
 export GORSA_ROOT_DIR=$WORKSPACE/runs/codersa_humaneval_seed42
 export GORSA_SEED=42
 
@@ -103,28 +101,30 @@ environment. Set their locations before launching the run:
 ```bash
 export WORKSPACE=/workspace
 export HF_TOKEN=...
+export GORSA_MODEL_ID=meta-llama/Meta-Llama-3-8B-Instruct
 export BIGCODEBENCH_REPO=/workspace/src/bigcodebench
 export BCB_EVAL_PYTHON=/workspace/.venvs/bcb_eval_py310/bin/python
 
 bash examples/run_bcb_full1140_seed.sh 42
 ```
 
+Repeat each command with seeds `42` through `46` for the reported seed sweep,
+using a distinct `$GORSA_ROOT_DIR` for each seed.
+
 ## Outputs
 
-Each run writes artifacts under `$GORSA_ROOT_DIR`, including:
+Each run writes artifacts under `$GORSA_ROOT_DIR`:
 
 ```text
 tasks/*.json
 run_config.json
 summary_pairwise_avg.json
 baseline_pairwise_avg.csv
-pairwise_avg_curve.csv
-*.png
 logs/*.log
 ```
 
-The main table is `baseline_pairwise_avg.csv`. The lambda sweep for the final
-CodeRSA score is stored in `pairwise_avg_curve.csv`.
+The main result table is `baseline_pairwise_avg.csv`; the `CodeRSA` row is the
+paper's fixed equal-weight reranker.
 
 ## Documentation
 
@@ -138,4 +138,3 @@ CodeRSA score is stored in `pairwise_avg_curve.csv`.
   stages in a sandboxed environment.
 - Large generated outputs, model caches, and virtual environments are excluded
   from git.
-- Consensus-WUCS is not required for this reproduction package.

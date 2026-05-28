@@ -11,8 +11,6 @@ from vllm import LLM, SamplingParams
 
 from gorsa_pipeline.core import (
     CODE_STOP_WORDS,
-    MIN_OVERSAMPLE,
-    OVERSAMPLE_FACTOR,
     clean_code_generation,
     get_first_top_level_function_name,
     mask_first_function_name_ast,
@@ -51,7 +49,7 @@ def local_model_path(model_id: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate candidate code for HumanEval+ tasks with vLLM.")
+    parser = argparse.ArgumentParser(description="Generate candidate code for MBPP+ tasks with vLLM.")
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--task-batch-size", type=int, default=int(os.environ.get("VLLM_TASK_BATCH_SIZE", "16")))
@@ -63,10 +61,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def candidate_sample_count(config) -> int:
-    override = os.environ.get("GORSA_CANDIDATE_OVERSAMPLE")
-    if override:
-        return int(override)
-    return max(config.n_candidates * OVERSAMPLE_FACTOR, MIN_OVERSAMPLE)
+    return config.n_candidates
 
 
 def candidate_temperature(config) -> float:
@@ -108,7 +103,7 @@ def main() -> None:
     print(f"candidate shard {args.shard_index}/{args.shard_count}: {len(task_paths)} task files")
     print("pending tasks:", len(pending_paths))
     print("n candidates:", config.n_candidates)
-    print("oversample:", sample_count)
+    print("candidate samples per task:", sample_count)
     print("temperature:", temperature)
     print("top_p:", top_p)
     print("max_new_tokens:", config.candidate_max_new_tokens)
@@ -195,7 +190,7 @@ def main() -> None:
                         "generation_config": {
                             "temperature": temperature,
                             "top_p": top_p,
-                            "oversample": sample_count,
+                            "raw_samples": sample_count,
                         },
                     }
                 )

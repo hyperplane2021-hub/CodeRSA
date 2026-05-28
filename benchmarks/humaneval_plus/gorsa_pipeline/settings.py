@@ -56,8 +56,6 @@ def load_config() -> ReproConfig:
 
     data = payload.get("config", payload)
     data["root_dir"] = str(DEFAULT_ROOT_DIR)
-    if "alpha_values" in data and isinstance(data["alpha_values"], list):
-        data["alpha_values"] = tuple(data["alpha_values"])
     if "GORSA_SCORE_BATCH_SIZE" in os.environ:
         data["score_batch_size"] = int(os.environ["GORSA_SCORE_BATCH_SIZE"])
     if "GORSA_GENERATION_BATCH_SIZE" in os.environ:

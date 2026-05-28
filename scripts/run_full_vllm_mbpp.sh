@@ -7,7 +7,6 @@ cd "${REPO_ROOT}"
 
 export GORSA_ROOT_DIR="${GORSA_ROOT_DIR:-${WORKSPACE}/codersa_mbpp_llama3_limit378_seed42}"
 export GORSA_LIMIT="${GORSA_LIMIT:-378}"
-export GORSA_CANDIDATE_OVERSAMPLE="${GORSA_CANDIDATE_OVERSAMPLE:-20}"
 export GORSA_EVAL_TIMEOUT_SECONDS="${GORSA_EVAL_TIMEOUT_SECONDS:-2}"
 export GORSA_EVAL_WORKERS="${GORSA_EVAL_WORKERS:-4}"
 
@@ -28,7 +27,6 @@ mkdir -p "${GORSA_ROOT_DIR}/logs" "${HF_HOME}" "${HUGGINGFACE_HUB_CACHE}" "${HF_
 
 echo "root: ${GORSA_ROOT_DIR}"
 echo "limit: ${GORSA_LIMIT}"
-echo "candidate oversample: ${GORSA_CANDIDATE_OVERSAMPLE}"
 echo "eval workers: ${GORSA_EVAL_WORKERS}"
 echo "vLLM task batch size: ${VLLM_TASK_BATCH_SIZE}"
 echo "L0 backend: transformers"

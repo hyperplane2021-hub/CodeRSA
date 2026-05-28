@@ -1,7 +1,4 @@
-"""Core functions extracted from GoRSA_Human+.ipynb.
-
-This module intentionally keeps the notebook's HumanEval+ pairwise pipeline semantics.
-"""
+"""Core utilities for the HumanEval+ CodeRSA pipeline."""
 import json
 import hashlib
 import math
@@ -95,7 +92,6 @@ class ReproConfig:
     additional_instruction_temperature: float = 0.7
     additional_instruction_top_p: float = 1.0
     additional_instruction_max_new_tokens: int = 96
-    alpha_values: Tuple[float, ...] = tuple(np.round(np.arange(0.0, 1.51, 0.05), 2).tolist())
     score_batch_size: int = 8
     generation_batch_size: int = 8
     eval_timeout_seconds: int = 8
@@ -105,9 +101,7 @@ class ReproConfig:
     force_recompute_l0: bool = True
 
     def to_dict(self) -> dict:
-        d = asdict(self)
-        d["alpha_values"] = list(self.alpha_values)
-        return d
+        return asdict(self)
 
 
 # ============================
@@ -1081,12 +1075,8 @@ def initialize_task_files_humanevalplus(config: ReproConfig, dataset) -> None:
 
 
 # ============================
-# Candidate extraction overrides from the pairwise notebook stage
+# Candidate extraction helpers
 # ============================
-
-OVERSAMPLE_FACTOR = 3
-
-MIN_OVERSAMPLE = 50
 
 def stable_int_from_task_id(task_id: str, mod: int = 10**8):
     h = hashlib.md5(str(task_id).encode("utf-8")).hexdigest()
@@ -1281,7 +1271,7 @@ def clean_generated_description(text: str) -> str:
     return text
 
 # ============================
-# Pairwise + avg reranking
+# CodeRSA reranking
 # ============================
 
 from typing import Dict, List, Optional, Sequence, Tuple, Any
@@ -1410,7 +1400,6 @@ def compute_pairwise_proxy_scores(
 
 def compute_task_results_pairwise_avg(
     record: dict,
-    lambda_values: Sequence[float],
     tie_margin: float = 0.0,
 ) -> dict:
     candidates = record["candidates"]
@@ -1436,19 +1425,8 @@ def compute_task_results_pairwise_avg(
     avg_all_idx = int(np.argmax(avg_all_scores))
     pairwise_only_idx = int(np.argmax(pairwise_scores))
 
-    pairwise_avg_curve = []
-    for lam in lambda_values:
-        mixed_scores = pairwise_z + float(lam) * avg_all_z
-        idx = int(np.argmax(mixed_scores))
-        pairwise_avg_curve.append(
-            {
-                "lambda": float(lam),
-                "selected_idx": idx,
-                "selected_passed": bool(candidate_eval[idx]["passed"]),
-                "selected_score": float(mixed_scores[idx]),
-                "all_scores": [float(x) for x in mixed_scores.tolist()],
-            }
-        )
+    codersa_scores = pairwise_z + avg_all_z
+    codersa_idx = int(np.argmax(codersa_scores))
 
     return {
         "oracle_any": bool(oracle_any),
@@ -1488,11 +1466,16 @@ def compute_task_results_pairwise_avg(
             "all_scores": [float(x) for x in pairwise_scores.tolist()],
         },
 
-        "pairwise_avg_curve": pairwise_avg_curve,
+        "codersa": {
+            "selected_idx": codersa_idx,
+            "selected_passed": bool(candidate_eval[codersa_idx]["passed"]),
+            "selected_score": float(codersa_scores[codersa_idx]),
+            "all_scores": [float(x) for x in codersa_scores.tolist()],
+        },
     }
 
 
-def summarize_run_pairwise_avg(root_dir: str | Path, lambda_values: Sequence[float]) -> dict:
+def summarize_run_pairwise_avg(root_dir: str | Path) -> dict:
     task_dir = Path(root_dir) / "tasks"
     records = []
     for path in sorted(task_dir.glob("*.json")):
@@ -1502,7 +1485,7 @@ def summarize_run_pairwise_avg(root_dir: str | Path, lambda_values: Sequence[flo
 
     total = len(records)
     if total == 0:
-        raise RuntimeError("No completed pairwise+avg task records found.")
+        raise RuntimeError("No completed CodeRSA task records found.")
 
     summary = {
         "num_tasks": total,
@@ -1520,20 +1503,8 @@ def summarize_run_pairwise_avg(root_dir: str | Path, lambda_values: Sequence[flo
         "orig_only_l0_acc": sum(bool(r["results_pairwise_avg"]["orig_only_l0"]["selected_passed"]) for r in records) / total,
         "avg_all_l0_acc": sum(bool(r["results_pairwise_avg"]["avg_all_l0"]["selected_passed"]) for r in records) / total,
         "pairwise_only_acc": sum(bool(r["results_pairwise_avg"]["pairwise_only"]["selected_passed"]) for r in records) / total,
-        "pairwise_avg_curve": [],
+        "codersa_acc": sum(bool(r["results_pairwise_avg"]["codersa"]["selected_passed"]) for r in records) / total,
     }
 
-    for lam in lambda_values:
-        lam = float(lam)
-        acc = sum(
-            next(x for x in r["results_pairwise_avg"]["pairwise_avg_curve"] if float(x["lambda"]) == lam)["selected_passed"]
-            for r in records
-        ) / total
-        summary["pairwise_avg_curve"].append({"lambda": lam, "accuracy": float(acc)})
-
-    best = max(summary["pairwise_avg_curve"], key=lambda x: x["accuracy"])
-    summary["pairwise_avg_best"] = best
-    summary["pairwise_avg_lambda1"] = next(
-        x for x in summary["pairwise_avg_curve"] if float(x["lambda"]) == 1.0
-    )
+    summary["codersa"] = {"accuracy": summary["codersa_acc"]}
     return summary

@@ -1,4 +1,4 @@
-"""Configuration for the HumanEval+ pairwise pipeline."""
+"""Configuration for the BigCodeBench pairwise pipeline."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from .core import ReproConfig, ensure_dir
 
 
 BASE_ROOT = Path("/workspace")
-DEFAULT_ROOT_DIR = Path(os.environ.get("GORSA_ROOT_DIR", BASE_ROOT / "HumanEval+Llama3"))
+DEFAULT_ROOT_DIR = Path(os.environ.get("GORSA_ROOT_DIR", BASE_ROOT / "codersa_bigcodebench_seed42"))
 
 
 def default_config() -> ReproConfig:
@@ -25,7 +25,7 @@ def default_config() -> ReproConfig:
         candidate_max_new_tokens=256,
         additional_instruction_temperature=float(os.environ.get("GORSA_ADDITIONAL_INSTRUCTION_TEMPERATURE", "0.0")),
         additional_instruction_top_p=float(os.environ.get("GORSA_ADDITIONAL_INSTRUCTION_TOP_P", "1.0")),
-        additional_instruction_max_new_tokens=int(os.environ.get("GORSA_ADDITIONAL_INSTRUCTION_MAX_NEW_TOKENS", "48")),
+        additional_instruction_max_new_tokens=int(os.environ.get("GORSA_ADDITIONAL_INSTRUCTION_MAX_NEW_TOKENS", "80")),
         score_batch_size=int(os.environ.get("GORSA_SCORE_BATCH_SIZE", "8")),
         generation_batch_size=int(os.environ.get("GORSA_GENERATION_BATCH_SIZE", "8")),
         eval_timeout_seconds=8,
@@ -56,8 +56,6 @@ def load_config() -> ReproConfig:
 
     data = payload.get("config", payload)
     data["root_dir"] = str(DEFAULT_ROOT_DIR)
-    if "alpha_values" in data and isinstance(data["alpha_values"], list):
-        data["alpha_values"] = tuple(data["alpha_values"])
     if "GORSA_SCORE_BATCH_SIZE" in os.environ:
         data["score_batch_size"] = int(os.environ["GORSA_SCORE_BATCH_SIZE"])
     if "GORSA_GENERATION_BATCH_SIZE" in os.environ:

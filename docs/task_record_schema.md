@@ -78,7 +78,7 @@ coderreviewer
 orig_only_l0
 avg_all_l0
 pairwise_only
-pairwise_avg_curve
+codersa
 oracle_any
 ```
 

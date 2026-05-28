@@ -8,12 +8,12 @@ after candidates have been selected.
 
 For each task with original instruction `I0`:
 
-1. Sample candidate programs `c1, ..., cn`.
+1. Sample candidate programs `c1, ..., cn` with `n=10`.
 2. Evaluate candidates against benchmark tests and store pass/fail labels.
-3. Score Coder and CoderReviewer baselines.
+3. Score the Coder and CoderReviewer baselines.
 4. For each candidate `ci`, generate a candidate-induced instruction `Ii` by
-   asking the model to describe the actual behavior implemented by the code.
-5. Compute an L0 score matrix:
+   asking the model to describe the behavior implemented by the code.
+5. Compute the L0 score matrix:
 
    ```text
    L0[i, j] = log P(ci | Ij)
@@ -23,7 +23,7 @@ For each task with original instruction `I0`:
    instructions aligned to candidates.
 
 6. Compute local pairwise pragmatic contests.
-7. Combine pairwise support with global average support and select the top
+7. Combine pairwise support with global L0 support and select the top
    candidate.
 
 ## Pairwise Contest
@@ -50,25 +50,23 @@ avg_all_l0(ci) = mean_j L0(ci | Ij)
 
 ## Final Score
 
-The final sweep score is:
+The CodeRSA score used for the main results is the fixed equal-weight
+combination:
 
 ```text
-score_lambda(ci) = z(pairwise_score(ci)) + lambda * z(avg_all_l0(ci))
+score(ci) = z(pairwise_score(ci)) + z(avg_all_l0(ci))
 ```
 
-The scripts sweep `lambda` from `0.0` to `3.0` in increments of `0.1` and report
-both `lambda=1` and the best lambda on the run.
+The reported `CodeRSA` row uses this score directly.
 
-## Baselines in This Repo
+## Baselines
 
-This repository focuses on:
+The summary table reports:
 
 - Random
 - Coder
 - CoderReviewer
+- Oracle@10
 - Avg-all L0
 - Pairwise only
-- Pairwise + Avg
-- optional lightweight CodeT script
-
-Consensus-WUCS is intentionally not part of this reproduction package.
+- CodeRSA

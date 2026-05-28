@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert official BigCodeBench samples/eval results into GoRSA task files."""
+"""Convert official BigCodeBench samples/eval results into CodeRSA task files."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def fill_empty_candidates(candidates: list[dict], candidate_eval: list[dict], se
 
 
 def extract_behavior_instruction(prompt: str) -> str:
-    """Extract the natural-language behavior spec used as GoRSA I_0."""
+    """Extract the natural-language behavior spec used as the original instruction."""
     text = str(prompt or "").strip()
     markers = [
         "\nThe function should output with:",
@@ -78,7 +78,7 @@ def extract_behavior_instruction(prompt: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build GoRSA tasks from official BigCodeBench artifacts.")
+    parser = argparse.ArgumentParser(description="Build CodeRSA tasks from official BigCodeBench artifacts.")
     parser.add_argument("--root", required=True, type=Path)
     parser.add_argument("--samples", required=True, type=Path)
     parser.add_argument("--eval-results", required=True, type=Path)

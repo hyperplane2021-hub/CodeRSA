@@ -32,7 +32,4 @@ tasks/
 run_config.json
 summary_pairwise_avg.json
 baseline_pairwise_avg.csv
-pairwise_avg_curve.csv
-codet_results.csv
-codet_summary.json
 *.png

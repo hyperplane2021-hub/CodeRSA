@@ -1,7 +1,7 @@
 # Artifact Notes
 
-This repository is intended to contain source code and lightweight
-configuration files. Large generated artifacts should be stored outside git.
+This repository contains source code and lightweight configuration files. Large
+generated artifacts should be stored outside git.
 
 ## Ignored Outputs
 
@@ -13,7 +13,7 @@ The `.gitignore` excludes:
 - run directories
 - per-task generated JSON records
 - evaluation JSONL files
-- plots and summary CSV/JSON files
+- summary CSV/JSON files
 
 ## Run Outputs
 
@@ -24,7 +24,6 @@ Typical contents are:
 run_config.json
 summary_pairwise_avg.json
 baseline_pairwise_avg.csv
-pairwise_avg_curve.csv
 tasks/*.json
 logs/*.log
 ```
@@ -33,7 +32,7 @@ The per-task JSON files contain candidate programs, candidate-induced
 instructions, L0 score matrices, and final reranking decisions. See
 [task_record_schema.md](task_record_schema.md) for field-level details.
 
-## External Artifact Release
+## Reviewer Artifact Bundle
 
 For reviewer-facing artifact bundles, include only reproducibility-relevant
 outputs:
@@ -42,7 +41,6 @@ outputs:
 run_config.json
 summary_pairwise_avg.json
 baseline_pairwise_avg.csv
-pairwise_avg_curve.csv
 tasks/*.json
 logs/*.log
 ```

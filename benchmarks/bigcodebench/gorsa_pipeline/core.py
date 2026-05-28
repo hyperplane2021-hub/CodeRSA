@@ -1,15 +1,8 @@
-"""Core functions extracted from GoRSA_Human+.ipynb.
-
-This module intentionally keeps the notebook's HumanEval+ pairwise pipeline semantics.
-"""
+"""Core utilities for the BigCodeBench CodeRSA pipeline."""
 import json
 import hashlib
-import math
-import os
 import random
 import re
-import subprocess
-import tempfile
 import textwrap
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -17,7 +10,6 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import ast
 import numpy as np
 import torch
-from datasets import load_dataset
 from tqdm.auto import tqdm
 import copy
 
@@ -95,7 +87,6 @@ class ReproConfig:
     additional_instruction_temperature: float = 0.7
     additional_instruction_top_p: float = 1.0
     additional_instruction_max_new_tokens: int = 96
-    alpha_values: Tuple[float, ...] = tuple(np.round(np.arange(0.0, 1.51, 0.05), 2).tolist())
     score_batch_size: int = 8
     generation_batch_size: int = 8
     eval_timeout_seconds: int = 8
@@ -105,9 +96,7 @@ class ReproConfig:
     force_recompute_l0: bool = True
 
     def to_dict(self) -> dict:
-        d = asdict(self)
-        d["alpha_values"] = list(self.alpha_values)
-        return d
+        return asdict(self)
 
 
 # ============================
@@ -159,45 +148,6 @@ def build_additional_instruction_prompt(code: str) -> str:
             func_clean = mask_first_function_name_ast(func_clean, new_name="f")
         except Exception:
             func_clean = func_clean.strip() or code.strip()
-
-    prompt_style = os.environ.get("GORSA_ADDITIONAL_INSTRUCTION_PROMPT_STYLE", "").strip().lower()
-    if prompt_style == "one_sentence_actual":
-        fewshot = textwrap.dedent("""\
-        Read each Python function and describe exactly what behavior it implements.
-
-        Rules:
-        - Output exactly one detailed sentence of 25 to 45 words.
-        - Describe the function's actual input-output behavior only.
-        - Do not guess the intended task beyond what the code really does.
-        - Mention returned type, deduplication, ordering, filtering, mutation, file or network side effects, special return values, and exact exceptions when relevant.
-        - Do not write code.
-        - Do not write explanations.
-        - Do not use markdown.
-
-        Function:
-        def f(xs):
-            return list(set(xs))
-        Description:
-        Return a list containing the unique elements from the input list, with duplicates removed and with no guarantee that the original ordering is preserved.
-
-        Function:
-        def f(xs):
-            return sorted(set(xs))
-        Description:
-        Return a sorted list of the distinct elements in the input list, removing duplicates before ordering the values in ascending order.
-
-        Function:
-        def f(xs, x):
-            for i, v in enumerate(xs):
-                if v == x:
-                    return i
-            return -1
-        Description:
-        Return the index of the first occurrence of x in the input list, or return -1 when x does not appear in the list.
-
-        Function:
-        """)
-        return fewshot + func_clean + "\nDescription:\n"
 
     fewshot = textwrap.dedent("""\
     Read the Python function and write a precise behavioral specification.
@@ -798,108 +748,8 @@ def generate_one_each(
 
 
 # ============================
-# Execution-based evaluation
+# Task records
 # ============================
-
-import subprocess
-import tempfile
-import textwrap
-from pathlib import Path
-from typing import Tuple
-
-
-def candidate_passes_humanevalplus_relaxed(
-    code: str,
-    context_code: str,
-    test_code: str,
-    entry_point: str,
-    timeout_seconds: int = 8,
-) -> Tuple[bool, str]:
-    """
-    HumanEval+ execution with relaxed function-name matching:
-    alias the first top-level function to the required entry_point.
-    """
-    preamble = textwrap.dedent(
-        """\
-        import math
-        import random
-        import re
-        import statistics
-        import functools
-        import itertools
-        import collections
-        import heapq
-        import bisect
-        from typing import *
-        """
-    )
-
-    actual_name = get_first_top_level_function_name(code)
-
-    alias_code = ""
-    if actual_name is not None and actual_name != entry_point:
-        alias_code = f"{entry_point} = {actual_name}"
-
-    script_parts = [preamble]
-
-    if context_code and context_code.strip():
-        script_parts.append(context_code.strip())
-
-    script_parts.append(code.rstrip())
-
-    if alias_code:
-        script_parts.append(alias_code)
-
-    script_parts.append(test_code.rstrip())
-    script_parts.append(f"check({entry_point})")
-
-    joined = "\n\n".join(script_parts) + "\n"
-
-    with tempfile.TemporaryDirectory() as td:
-        file_path = Path(td) / "humaneval_exec.py"
-        file_path.write_text(joined, encoding="utf-8")
-
-        try:
-            proc = subprocess.run(
-                ["python", str(file_path)],
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-                cwd=td,
-            )
-        except subprocess.TimeoutExpired:
-            return False, "timeout"
-
-        if proc.returncode == 0:
-            return True, ""
-
-        stderr = (proc.stderr or proc.stdout or "").strip()
-        return False, stderr[:4000]
-
-
-# ============================
-# Clustering
-# ============================
-
-
-# ============================
-# RSA / reranking
-# ============================
-
-
-from typing import Optional
-from datasets import load_dataset
-import re
-import ast
-import textwrap
-from pathlib import Path
-
-
-def load_humanevalplus_test_split(limit: Optional[int] = None):
-    ds = load_dataset("evalplus/humanevalplus", split="test")
-    if limit is not None:
-        return ds.select(range(min(limit, len(ds))))
-    return ds
 
 
 def _safe_task_id(task_id: str) -> str:
@@ -910,283 +760,9 @@ def task_path(root_dir: str | Path, task_id: str) -> Path:
     return ensure_dir(Path(root_dir) / "tasks") / f"{_safe_task_id(task_id)}.json"
 
 
-def _split_humaneval_prompt(prompt: str, entry_point: Optional[str] = None):
-    lines = prompt.splitlines()
-    def_idx = None
-    if entry_point:
-        target_pat = re.compile(rf"^(async\s+def|def)\s+{re.escape(entry_point)}\s*\(")
-        for i, line in enumerate(lines):
-            if target_pat.match(line):
-                def_idx = i
-                break
-
-    if def_idx is None:
-        for i, line in enumerate(lines):
-            if line.startswith("def ") or line.startswith("async def "):
-                def_idx = i
-                break
-
-    if def_idx is None:
-        return "", prompt
-
-    context_code = "\n".join(lines[:def_idx]).strip()
-    function_prompt = "\n".join(lines[def_idx:]).strip()
-    return context_code, function_prompt
-
-
-def _extract_humaneval_instruction_from_prompt(function_prompt: str, entry_point: Optional[str] = None) -> str:
-    """
-    Extract a clean NL instruction from the FIRST function docstring only.
-
-    Removes:
-      - doctest input lines (>>> ...)
-      - doctest outputs (True/False/None, lists, numbers, strings, etc.)
-      - 'Example:' / 'Examples:' sections
-      - trailing blank/comment noise
-    """
-    try:
-        tree = ast.parse(function_prompt)
-
-        for node in tree.body:
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                if entry_point and node.name != entry_point:
-                    continue
-                doc = ast.get_docstring(node)
-                if not doc:
-                    continue
-
-                kept = []
-                for ln in doc.splitlines():
-                    s = ln.strip()
-
-                    if not s:
-                        continue
-
-                    # stop once examples start
-                    if s.lower().startswith("example"):
-                        break
-
-                    # remove doctest prompt lines
-                    if s.startswith(">>>"):
-                        continue
-
-                    # remove obvious doctest / example outputs
-                    if s in {"True", "False", "None"}:
-                        continue
-
-                    # remove pure numeric / list / tuple / dict / quoted outputs
-                    if re.fullmatch(r"[-+]?\d+(\.\d+)?", s):
-                        continue
-                    if re.fullmatch(r"\[.*\]", s):
-                        continue
-                    if re.fullmatch(r"\(.*\)", s):
-                        continue
-                    if re.fullmatch(r"\{.*\}", s):
-                        continue
-                    if re.fullmatch(r"['\"].*['\"]", s):
-                        continue
-
-                    # remove inline equality-style examples
-                    if "=>" in s or "==" in s:
-                        continue
-
-                    kept.append(s)
-
-                text = " ".join(kept).strip()
-                text = re.sub(r"\s+", " ", text)
-
-                if text:
-                    return text
-
-    except Exception:
-        pass
-
-    # fallback: first non-empty non-def line
-    lines = function_prompt.splitlines()
-    for ln in lines:
-        s = ln.strip()
-        if s and not s.startswith("def ") and not s.startswith('"""') and not s.startswith("'''"):
-            return s
-
-    return function_prompt.strip()
-def _extract_first_function_block(function_prompt: str, entry_point: Optional[str] = None) -> str:
-    """
-    Keep only the first top-level function definition block.
-    """
-    lines = function_prompt.splitlines()
-
-    start = None
-    target_pat = None
-    if entry_point:
-        target_pat = re.compile(rf"^(async\s+def|def)\s+{re.escape(entry_point)}\s*\(")
-
-    for i, line in enumerate(lines):
-        if target_pat is not None:
-            if target_pat.match(line):
-                start = i
-                break
-        elif line.startswith("def ") or line.startswith("async def "):
-            start = i
-            break
-
-    if start is None:
-        return function_prompt.strip()
-
-    kept = [lines[start]]
-
-    for line in lines[start + 1:]:
-        # keep indented lines / blank lines as part of first function block
-        if line.strip() == "":
-            kept.append(line)
-            continue
-
-        indent = len(line) - len(line.lstrip())
-        if indent == 0:
-            break
-
-        kept.append(line)
-
-    return "\n".join(kept).rstrip()
-
-def normalize_humanevalplus_doc(doc: dict) -> dict:
-    raw_prompt = str(doc["prompt"]).rstrip()
-    entry_point = str(doc["entry_point"])
-    context_code, function_prompt = _split_humaneval_prompt(raw_prompt, entry_point=entry_point)
-    function_prompt = _extract_first_function_block(function_prompt, entry_point=entry_point)
-    nl_text = _extract_humaneval_instruction_from_prompt(function_prompt, entry_point=entry_point)
-
-    reference_code = raw_prompt + str(doc.get("canonical_solution", "") or "")
-
-    out = {
-        "task_id": str(doc["task_id"]),
-        "text": nl_text,
-        "raw_prompt": raw_prompt,
-        "context_code": context_code,
-        "function_prompt": function_prompt,
-        "entry_point": entry_point,
-        "test": str(doc["test"]),
-        "reference_code": reference_code,
-        "test_list": [],
-        "test_setup_code": "",
-        "challenge_test_list": [str(doc["test"])],
-    }
-    return out
-
-
-
-def extract_first_doctest(function_prompt: str) -> str:
-    """
-    Extract the first doctest block from the first function prompt.
-
-    Returns something like:
-        >>> func(args)
-        result
-
-    Stops before:
-      - next doctest
-      - blank line
-      - docstring terminator
-    """
-    lines = function_prompt.splitlines()
-
-    for i, line in enumerate(lines):
-        s = line.strip()
-
-        if s.startswith(">>>"):
-            block = [s]
-            j = i + 1
-
-            while j < len(lines):
-                nxt = lines[j].strip()
-
-                if not nxt:
-                    break
-                if nxt.startswith(">>>"):
-                    break
-                if nxt in {'"""', "'''"}:
-                    break
-
-                block.append(nxt)
-                j += 1
-
-            return "\n".join(block)
-
-    return ""
-
-import textwrap
-
-def build_humanevalplus_generation_prompt(doc: dict) -> str:
-    """
-    Plain-text generation prompt for HumanEval+:
-    instruction + one doctest block
-    """
-    description = doc["text"].strip()
-    test_example = extract_first_doctest(doc["function_prompt"]).strip()
-
-    body = description
-    if test_example:
-        body = body + "\n" + test_example
-
-    body = textwrap.indent(body, "        ")
-
-    return (
-        "        You are an expert Python programmer.\n"
-        "        Write exactly one Python function that solves the task.\n"
-        "        Output only Python code.\n"
-        "        Do not write tests.\n"
-        "        Do not write example usage.\n"
-        "        Do not write explanations.\n"
-        "        Do not write markdown fences.\n\n"
-        '        """\n'
-        f"{body}\n"
-        '        """\n'
-    )
-
-
-def initialize_task_files_humanevalplus(config: ReproConfig, dataset) -> None:
-    ensure_dir(config.root_dir)
-    write_json({"config": config.to_dict()}, Path(config.root_dir) / "run_config.json")
-
-    for raw in dataset:
-        doc = normalize_humanevalplus_doc(raw)
-        path = task_path(config.root_dir, doc["task_id"])
-        if path.exists():
-            continue
-
-        prompt = build_humanevalplus_generation_prompt(doc)
-
-        record = {
-            "task_id": doc["task_id"],
-            "text": doc["text"],
-            "raw_prompt": doc["raw_prompt"],
-            "context_code": doc["context_code"],
-            "function_prompt": doc["function_prompt"],
-            "entry_point": doc["entry_point"],
-            "test": doc["test"],
-            "test_list": doc["test_list"],
-            "test_setup_code": doc["test_setup_code"],
-            "challenge_test_list": doc["challenge_test_list"],
-            "reference_code": doc["reference_code"],
-            "generation_prompt": prompt,
-            "candidates": None,
-            "candidate_eval": None,
-            "coder_logprobs": None,
-            "reviewer_logprobs": None,
-            "prior_logprobs": None,
-            "additional_instructions": None,
-            "l0_logprobs": None,
-            "results_pairwise_avg": None,
-        }
-        write_json(record, path)
-
-
 # ============================
-# Candidate extraction overrides from the pairwise notebook stage
+# Candidate extraction helpers
 # ============================
-
-OVERSAMPLE_FACTOR = 3
-
-MIN_OVERSAMPLE = 50
 
 def stable_int_from_task_id(task_id: str, mod: int = 10**8):
     h = hashlib.md5(str(task_id).encode("utf-8")).hexdigest()
@@ -1289,16 +865,12 @@ def try_extract_first_function_from_text(text: str) -> str:
 # Additional-instruction postprocessing
 # ============================
 
-def align_humaneval_instruction_style(text: str) -> str:
+def align_behavior_description_text(text: str) -> str:
     """
-    Light normalization for HumanEval-style behavioral descriptions.
+    Light normalization for generated behavioral descriptions.
 
-    For HumanEval+, we keep the generated behavioral description as-is instead of forcing a "Write a function..." prefix.
-    We only:
-      - normalize whitespace
-      - remove prompt artifacts
-      - ensure proper capitalization
-      - ensure trailing punctuation
+    The generated text is kept as a behavior description rather than converted
+    into a task template.
     """
     text = text.strip()
     if not text:
@@ -1340,7 +912,7 @@ def postprocess_generated_instruction(text: str) -> str:
         text = " ".join(s.strip() for s in sentences[:3]).strip()
     text = re.sub(r"(?<=\d)\.\s+(?=\d)", ".", text)
 
-    text = align_humaneval_instruction_style(text)
+    text = align_behavior_description_text(text)
     return text
 
 
@@ -1389,7 +961,7 @@ def clean_generated_description(text: str) -> str:
     return text
 
 # ============================
-# Pairwise + avg reranking
+# CodeRSA reranking
 # ============================
 
 from typing import Dict, List, Optional, Sequence, Tuple, Any
@@ -1518,7 +1090,6 @@ def compute_pairwise_proxy_scores(
 
 def compute_task_results_pairwise_avg(
     record: dict,
-    lambda_values: Sequence[float],
     tie_margin: float = 0.0,
 ) -> dict:
     candidates = record["candidates"]
@@ -1544,19 +1115,8 @@ def compute_task_results_pairwise_avg(
     avg_all_idx = int(np.argmax(avg_all_scores))
     pairwise_only_idx = int(np.argmax(pairwise_scores))
 
-    pairwise_avg_curve = []
-    for lam in lambda_values:
-        mixed_scores = pairwise_z + float(lam) * avg_all_z
-        idx = int(np.argmax(mixed_scores))
-        pairwise_avg_curve.append(
-            {
-                "lambda": float(lam),
-                "selected_idx": idx,
-                "selected_passed": bool(candidate_eval[idx]["passed"]),
-                "selected_score": float(mixed_scores[idx]),
-                "all_scores": [float(x) for x in mixed_scores.tolist()],
-            }
-        )
+    codersa_scores = pairwise_z + avg_all_z
+    codersa_idx = int(np.argmax(codersa_scores))
 
     return {
         "oracle_any": bool(oracle_any),
@@ -1596,11 +1156,16 @@ def compute_task_results_pairwise_avg(
             "all_scores": [float(x) for x in pairwise_scores.tolist()],
         },
 
-        "pairwise_avg_curve": pairwise_avg_curve,
+        "codersa": {
+            "selected_idx": codersa_idx,
+            "selected_passed": bool(candidate_eval[codersa_idx]["passed"]),
+            "selected_score": float(codersa_scores[codersa_idx]),
+            "all_scores": [float(x) for x in codersa_scores.tolist()],
+        },
     }
 
 
-def summarize_run_pairwise_avg(root_dir: str | Path, lambda_values: Sequence[float]) -> dict:
+def summarize_run_pairwise_avg(root_dir: str | Path) -> dict:
     task_dir = Path(root_dir) / "tasks"
     records = []
     for path in sorted(task_dir.glob("*.json")):
@@ -1610,7 +1175,7 @@ def summarize_run_pairwise_avg(root_dir: str | Path, lambda_values: Sequence[flo
 
     total = len(records)
     if total == 0:
-        raise RuntimeError("No completed pairwise+avg task records found.")
+        raise RuntimeError("No completed CodeRSA task records found.")
 
     summary = {
         "num_tasks": total,
@@ -1628,20 +1193,8 @@ def summarize_run_pairwise_avg(root_dir: str | Path, lambda_values: Sequence[flo
         "orig_only_l0_acc": sum(bool(r["results_pairwise_avg"]["orig_only_l0"]["selected_passed"]) for r in records) / total,
         "avg_all_l0_acc": sum(bool(r["results_pairwise_avg"]["avg_all_l0"]["selected_passed"]) for r in records) / total,
         "pairwise_only_acc": sum(bool(r["results_pairwise_avg"]["pairwise_only"]["selected_passed"]) for r in records) / total,
-        "pairwise_avg_curve": [],
+        "codersa_acc": sum(bool(r["results_pairwise_avg"]["codersa"]["selected_passed"]) for r in records) / total,
     }
 
-    for lam in lambda_values:
-        lam = float(lam)
-        acc = sum(
-            next(x for x in r["results_pairwise_avg"]["pairwise_avg_curve"] if float(x["lambda"]) == lam)["selected_passed"]
-            for r in records
-        ) / total
-        summary["pairwise_avg_curve"].append({"lambda": lam, "accuracy": float(acc)})
-
-    best = max(summary["pairwise_avg_curve"], key=lambda x: x["accuracy"])
-    summary["pairwise_avg_best"] = best
-    summary["pairwise_avg_lambda1"] = next(
-        x for x in summary["pairwise_avg_curve"] if float(x["lambda"]) == 1.0
-    )
+    summary["codersa"] = {"accuracy": summary["codersa_acc"]}
     return summary
