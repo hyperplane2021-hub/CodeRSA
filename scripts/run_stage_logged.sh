@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: scripts/run_stage_logged.sh scripts/02_generate_candidates.py [args...]"
+  echo "usage: scripts/run_stage_logged.sh scripts/02_generate_candidates_vllm.py [args...]"
   exit 2
 fi
 
