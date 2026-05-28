@@ -8,7 +8,7 @@ after candidates have been selected.
 
 For each task with original instruction `I0`:
 
-1. Sample candidate programs `c1, ..., cn` with `n=10`.
+1. Sample candidate programs and keep `n=10` valid candidates per task.
 2. Evaluate candidates against benchmark tests and store pass/fail labels.
 3. Score the Coder and CoderReviewer baselines.
 4. For each candidate `ci`, generate a candidate-induced instruction `Ii` by

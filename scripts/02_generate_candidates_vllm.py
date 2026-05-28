@@ -61,7 +61,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def candidate_sample_count(config) -> int:
-    return config.n_candidates
+    override = os.environ.get("GORSA_CANDIDATE_OVERSAMPLE")
+    return int(override) if override is not None else config.n_candidates
 
 
 def candidate_temperature(config) -> float:
@@ -103,7 +104,7 @@ def main() -> None:
     print(f"candidate shard {args.shard_index}/{args.shard_count}: {len(task_paths)} task files")
     print("pending tasks:", len(pending_paths))
     print("n candidates:", config.n_candidates)
-    print("candidate samples per task:", sample_count)
+    print("raw samples per task:", sample_count)
     print("temperature:", temperature)
     print("top_p:", top_p)
     print("max_new_tokens:", config.candidate_max_new_tokens)

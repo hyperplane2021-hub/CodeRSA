@@ -33,6 +33,8 @@ All three benchmarks follow the same high-level pipeline:
 The default settings match the paper:
 
 - candidate pool size: `n=10`
+- raw candidate samples per task for MBPP+: `50`, from which 10 valid
+  candidates are kept
 - candidate sampling: temperature `1.2`, top-p `1.0`
 - reported seed sweep: `42, 43, 44, 45, 46`
 - induced-instruction generation: greedy decoding
@@ -67,7 +69,9 @@ pip install -r requirements-vllm.txt
 
 Set `HF_TOKEN` if the selected model requires Hugging Face access.
 
-## Running MBPP+
+## Default Run: MBPP+
+
+The default launcher runs the MBPP+ reproduction.
 
 ```bash
 export WORKSPACE=/workspace
@@ -76,8 +80,18 @@ export GORSA_MODEL_ID=meta-llama/Meta-Llama-3-8B-Instruct
 export GORSA_ROOT_DIR=$WORKSPACE/runs/codersa_mbpp_seed42
 export GORSA_SEED=42
 export GORSA_LIMIT=378
+export GORSA_CANDIDATE_OVERSAMPLE=50
 
 bash scripts/run_full_vllm_mbpp.sh
+```
+
+For the same MBPP+ setting with staged task writes and sharded two-GPU L0
+scoring:
+
+```bash
+export WORKSPACE=/workspace
+export HF_TOKEN=...
+bash examples/run_mbpp_oversample50_h200.sh
 ```
 
 ## Running HumanEval+
