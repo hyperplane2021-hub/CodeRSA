@@ -18,7 +18,7 @@ def default_config() -> ReproConfig:
         root_dir=str(DEFAULT_ROOT_DIR),
         model_id=os.environ.get("GORSA_MODEL_ID", "meta-llama/Meta-Llama-3-8B-Instruct"),
         seed=int(os.environ.get("GORSA_SEED", "42")),
-        limit=974,
+        limit=int(os.environ.get("GORSA_LIMIT", "1140")),
         n_candidates=10,
         candidate_temperature=1.2,
         candidate_top_p=1.0,

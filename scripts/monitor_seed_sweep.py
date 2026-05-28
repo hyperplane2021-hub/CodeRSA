@@ -152,7 +152,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Monitor MBPP+ seed sweep progress.")
     parser.add_argument("roots", nargs="*", help="Run root directories.")
     workspace = os.environ.get("WORKSPACE", "/workspace")
-    parser.add_argument("--root-template", default=f"{workspace}/runs/codersa_mbpp_llama3_limit974_seed{{seed}}")
+    parser.add_argument("--root-template", default=f"{workspace}/runs/codersa_mbpp_llama3_limit378_seed{{seed}}")
     parser.add_argument("--seeds", default="43,44,45,46")
     parser.add_argument("--watch", action="store_true")
     parser.add_argument("--interval", type=float, default=15.0)

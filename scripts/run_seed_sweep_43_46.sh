@@ -22,7 +22,7 @@ export VLLM_ENFORCE_EAGER="${VLLM_ENFORCE_EAGER:-1}"
 roots=()
 for seed in "${seeds[@]}"; do
   export GORSA_SEED="${seed}"
-  export GORSA_ROOT_DIR="${WORKSPACE}/runs/codersa_mbpp_llama3_limit974_seed${seed}"
+  export GORSA_ROOT_DIR="${WORKSPACE}/runs/codersa_mbpp_llama3_limit378_seed${seed}"
   roots+=("${GORSA_ROOT_DIR}")
   echo "========== SEED ${seed} =========="
   echo "root=${GORSA_ROOT_DIR}"

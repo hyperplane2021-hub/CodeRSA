@@ -27,10 +27,10 @@ def default_root_dir() -> Path:
         return Path(env_root)
 
     workspace = Path(os.environ.get("WORKSPACE", "/workspace"))
-    candidate = workspace / "codersa_mbpp_llama3_limit974_seed42_2gpu_repro"
+    candidate = workspace / "codersa_mbpp_llama3_limit378_seed42_2gpu_repro"
     if candidate.exists():
         return candidate
-    return workspace / "codersa_mbpp_llama3_limit974_seed42"
+    return workspace / "codersa_mbpp_llama3_limit378_seed42"
 
 
 def load_records(task_dir: Path):

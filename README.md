@@ -70,7 +70,7 @@ export HF_TOKEN=...
 export GORSA_MODEL_ID=meta-llama/Meta-Llama-3-8B-Instruct
 export GORSA_ROOT_DIR=$WORKSPACE/runs/codersa_mbpp_seed42
 export GORSA_SEED=42
-export GORSA_LIMIT=974
+export GORSA_LIMIT=378
 
 bash scripts/run_full_vllm_mbpp.sh
 ```

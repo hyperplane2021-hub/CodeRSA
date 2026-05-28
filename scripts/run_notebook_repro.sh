@@ -6,7 +6,7 @@ WORKSPACE="${WORKSPACE:-/workspace}"
 cd "${REPO_ROOT}"
 
 export PYTHONPATH="${REPO_ROOT}/src:${REPO_ROOT}:${PYTHONPATH:-}"
-export GORSA_ROOT_DIR="${GORSA_ROOT_DIR:-${WORKSPACE}/runs/codersa_mbpp_llama3_limit974_seed42}"
+export GORSA_ROOT_DIR="${GORSA_ROOT_DIR:-${WORKSPACE}/runs/codersa_mbpp_llama3_limit378_seed42}"
 export HF_HOME="${HF_HOME:-${WORKSPACE}/hf_cache}"
 export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-${HF_HOME}/hub}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-${HF_HOME}}"

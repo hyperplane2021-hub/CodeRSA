@@ -10,7 +10,7 @@ from .core import ReproConfig, ensure_dir
 
 
 BASE_ROOT = Path(os.environ.get("WORKSPACE", "/root/workspace"))
-DEFAULT_ROOT_DIR = Path(os.environ.get("GORSA_ROOT_DIR", BASE_ROOT / "codersa_mbpp_llama3_limit974_seed42"))
+DEFAULT_ROOT_DIR = Path(os.environ.get("GORSA_ROOT_DIR", BASE_ROOT / "codersa_mbpp_llama3_limit378_seed42"))
 
 
 def default_config() -> ReproConfig:
@@ -18,7 +18,7 @@ def default_config() -> ReproConfig:
         root_dir=str(DEFAULT_ROOT_DIR),
         model_id=os.environ.get("GORSA_MODEL_ID", "meta-llama/Meta-Llama-3-8B-Instruct"),
         seed=int(os.environ.get("GORSA_SEED", "42")),
-        limit=int(os.environ.get("GORSA_LIMIT", "974")),
+        limit=int(os.environ.get("GORSA_LIMIT", "378")),
         n_candidates=10,
         candidate_temperature=1.2,
         candidate_top_p=1.0,
