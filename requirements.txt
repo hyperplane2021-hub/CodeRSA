@@ -1,0 +1,11 @@
+accelerate
+datasets
+huggingface_hub>=0.24
+matplotlib
+numpy
+pandas
+sentencepiece
+tokenizers>=0.19
+torch
+tqdm
+transformers>=4.44

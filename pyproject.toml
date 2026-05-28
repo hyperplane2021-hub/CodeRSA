@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codersa-repro"
+version = "0.1.0"
+description = "Reproduction code for CodeRSA pragmatic reranking for code generation."
+requires-python = ">=3.10"
+dependencies = [
+  "accelerate",
+  "datasets",
+  "huggingface_hub>=0.24",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "sentencepiece",
+  "tokenizers>=0.19",
+  "torch",
+  "tqdm",
+  "transformers>=4.44",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
