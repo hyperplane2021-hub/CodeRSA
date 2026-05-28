@@ -28,9 +28,8 @@ tasks/*.json
 logs/*.log
 ```
 
-The per-task JSON files contain candidate programs, candidate-induced
-instructions, L0 score matrices, and final reranking decisions. See
-[task_record_schema.md](task_record_schema.md) for field-level details.
+The per-task JSON files contain the intermediate records needed to audit and
+recompute the reported results.
 
 ## Reviewer Artifact Bundle
 

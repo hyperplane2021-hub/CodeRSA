@@ -26,14 +26,14 @@ def main() -> None:
     dataset = load_dataset_for_config(config)
 
     root = Path(config.root_dir)
-    staged_root = Path("/tmp/gorsa_init_staged") / root.name
-    staged_tasks = staged_root / "tasks"
+    temp_root = Path("/tmp/codersa_init") / root.name
+    temp_tasks = temp_root / "tasks"
 
-    if staged_root.exists():
-        shutil.rmtree(staged_root)
-    staged_tasks.mkdir(parents=True, exist_ok=True)
+    if temp_root.exists():
+        shutil.rmtree(temp_root)
+    temp_tasks.mkdir(parents=True, exist_ok=True)
 
-    write_json_compact({"config": config.to_dict()}, staged_root / "run_config.json")
+    write_json_compact({"config": config.to_dict()}, temp_root / "run_config.json")
 
     count = 0
     for raw in dataset:
@@ -59,19 +59,19 @@ def main() -> None:
             "results": None,
             "results_pairwise_avg": None,
         }
-        dst = Path(str(task_path(staged_root, doc["task_id"])))
+        dst = Path(str(task_path(temp_root, doc["task_id"])))
         write_json_compact(record, dst)
         count += 1
 
-    print(f"staged task files: {count}", flush=True)
+    print(f"task files: {count}", flush=True)
 
     root.mkdir(parents=True, exist_ok=True)
     workspace_tasks = root / "tasks"
     if workspace_tasks.exists():
         shutil.rmtree(workspace_tasks)
-    shutil.copytree(staged_tasks, workspace_tasks)
-    shutil.copyfile(staged_root / "run_config.json", root / "run_config.json")
-    print(f"wrote staged init to: {root}", flush=True)
+    shutil.copytree(temp_tasks, workspace_tasks)
+    shutil.copyfile(temp_root / "run_config.json", root / "run_config.json")
+    print(f"wrote init to: {root}", flush=True)
 
 
 if __name__ == "__main__":

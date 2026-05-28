@@ -12,7 +12,7 @@ export GORSA_SCORE_BATCH_SIZE="${GORSA_SCORE_BATCH_SIZE:-64}"
 mkdir -p "${GORSA_ROOT_DIR}/logs" /tmp/gorsa_stage_logs
 
 echo "root: ${GORSA_ROOT_DIR}"
-echo "L0 backend: transformers sharded data parallel"
+echo "L0 scoring: parallel"
 echo "GORSA_TASK_SHARD_COUNT=${GORSA_TASK_SHARD_COUNT}"
 echo "GORSA_SCORE_BATCH_SIZE=${GORSA_SCORE_BATCH_SIZE}"
 

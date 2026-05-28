@@ -9,7 +9,7 @@ pairwise scores with global L0 support to select the final program.
 
 ## Benchmarks
 
-The repository supports the three benchmarks used in the paper:
+The repository supports the three benchmarks used in the paper.
 
 ```text
 HumanEval+      164 tasks
@@ -40,12 +40,8 @@ The default settings match the paper:
 - induced-instruction generation: greedy decoding
 - final CodeRSA score: `z(pairwise) + z(avg-all L0)`
 
-HumanEval+ and MBPP+ use the concise one-sentence behavior-description prompt
-for induced instructions. BigCodeBench uses the detailed behavior-description
-prompt.
-
-To reproduce a different paper model, change `GORSA_MODEL_ID`; the benchmark
-and reranking settings stay fixed.
+To reproduce a different paper model, change `GORSA_MODEL_ID`; the benchmark and
+reranking settings stay fixed.
 
 ## Installation
 
@@ -85,13 +81,12 @@ export GORSA_CANDIDATE_OVERSAMPLE=50
 bash scripts/run_full_vllm_mbpp.sh
 ```
 
-For the same MBPP+ setting with staged task writes and sharded two-GPU L0
-scoring:
+For the MBPP+ oversample-50 run:
 
 ```bash
 export WORKSPACE=/workspace
 export HF_TOKEN=...
-bash examples/run_mbpp_oversample50_h200.sh
+bash examples/run_mbpp_oversample50.sh
 ```
 
 ## Running HumanEval+
@@ -143,7 +138,6 @@ paper's fixed equal-weight reranker.
 ## Documentation
 
 - [docs/method.md](docs/method.md): scoring and reranking details
-- [docs/task_record_schema.md](docs/task_record_schema.md): per-task JSON format
 - [docs/artifacts.md](docs/artifacts.md): output and storage notes
 
 ## Notes

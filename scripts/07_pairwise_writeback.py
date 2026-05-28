@@ -31,14 +31,14 @@ def main() -> None:
     dataset = load_dataset_for_config(config)
     root = Path(config.root_dir)
     workspace_tasks = root / "tasks"
-    staged_tasks = Path("/tmp/gorsa_pairwise_writeback") / root.name / "tasks"
+    temp_tasks = Path("/tmp/codersa_pairwise") / root.name / "tasks"
 
-    if staged_tasks.exists():
-        shutil.rmtree(staged_tasks)
-    staged_tasks.mkdir(parents=True, exist_ok=True)
+    if temp_tasks.exists():
+        shutil.rmtree(temp_tasks)
+    temp_tasks.mkdir(parents=True, exist_ok=True)
 
-    staged = []
-    for raw in tqdm(dataset, desc="Stage 7: compute pairwise to /tmp"):
+    completed = []
+    for raw in tqdm(dataset, desc="Stage 7: compute CodeRSA"):
         doc = normalize_mbpp_doc(raw)
         src = Path(task_path(config.root_dir, doc["task_id"]))
         if not src.exists():
@@ -63,15 +63,15 @@ def main() -> None:
             record=record,
             tie_margin=PAIRWISE_TIE_MARGIN,
         )
-        dst = staged_tasks / src.name
+        dst = temp_tasks / src.name
         write_json_compact(record, dst)
-        staged.append((dst, workspace_tasks / src.name))
+        completed.append((dst, workspace_tasks / src.name))
 
-    if not staged:
-        raise RuntimeError("No task JSON files staged for pairwise writeback.")
+    if not completed:
+        raise RuntimeError("No completed task JSON files for CodeRSA.")
 
-    print(f"Staged {len(staged)} task JSON files under {staged_tasks}", flush=True)
-    for src, dst in tqdm(staged, desc="Stage 7: copy pairwise JSON to workspace"):
+    print(f"Completed {len(completed)} task JSON files.", flush=True)
+    for src, dst in tqdm(completed, desc="Stage 7: write CodeRSA results"):
         tmp = dst.with_name(f".{dst.name}.pairwise.tmp")
         shutil.copyfile(src, tmp)
         tmp.replace(dst)
@@ -80,7 +80,7 @@ def main() -> None:
     summary_path = root / "summary_pairwise_avg.json"
     write_json_compact(summary, summary_path)
     print("Saved:", summary_path, flush=True)
-    print(f"Wrote pairwise results into {len(staged)} task JSON files.", flush=True)
+    print(f"Wrote CodeRSA results into {len(completed)} task JSON files.", flush=True)
 
 
 if __name__ == "__main__":
