@@ -10,6 +10,7 @@ from gorsa_pipeline.core import (
     compute_task_results_pairwise_avg,
     normalize_mbpp_doc,
     read_json,
+    summarize_run_pairwise_avg,
     task_path,
 )
 from gorsa_pipeline.runtime import load_dataset_for_config, prepare_config
@@ -75,6 +76,10 @@ def main() -> None:
         shutil.copyfile(src, tmp)
         tmp.replace(dst)
 
+    summary = summarize_run_pairwise_avg(config.root_dir)
+    summary_path = root / "summary_pairwise_avg.json"
+    write_json_compact(summary, summary_path)
+    print("Saved:", summary_path, flush=True)
     print(f"Wrote pairwise results into {len(staged)} task JSON files.", flush=True)
 
 

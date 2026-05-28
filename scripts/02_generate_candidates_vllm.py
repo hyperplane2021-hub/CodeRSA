@@ -62,7 +62,9 @@ def parse_args() -> argparse.Namespace:
 
 def candidate_sample_count(config) -> int:
     override = os.environ.get("GORSA_CANDIDATE_OVERSAMPLE")
-    return int(override) if override is not None else config.n_candidates
+    if override is None:
+        return config.n_candidates
+    return max(config.n_candidates, int(override))
 
 
 def candidate_temperature(config) -> float:
